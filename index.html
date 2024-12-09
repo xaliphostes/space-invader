@@ -100,6 +100,9 @@
             if (e.key === 'ArrowLeft') leftPressed = true;
             if (e.key === 'ArrowRight') rightPressed = true;
             if (e.key === ' ' && !gameOver) fireBullet();
+            if(gameOver) {
+                resetGame();
+            }
         });
 
         document.addEventListener('keyup', (e) => {
@@ -120,6 +123,10 @@
                 if (!gameOver) fireBullet();
             }
             lastTouchTime = currentTime;
+
+            if (gameOver) {
+                resetGame();
+            }
         });
 
         canvas.addEventListener('touchmove', (e) => {
