@@ -19,8 +19,27 @@
             border: 2px solid #33ff33;
         }
 
-        canvas {
+        #controls {
+            position: fixed;
+            bottom: 20px;
+            display: flex;
+            gap: 50px;
+        }
+
+        .control-btn {
+            width: 60px;
+            height: 60px;
+            background: rgba(51, 255, 51, 0.2);
+            border: 2px solid #33ff33;
+            border-radius: 50%;
             touch-action: none;
+            display: none;
+        }
+
+        @media (hover: none) {
+            .control-btn {
+                display: block;
+            }
         }
     </style>
 </head>
@@ -28,6 +47,10 @@
 <body>
     <div id="game-container">
         <canvas id="gameCanvas"></canvas>
+        <div id="controls">
+            <div id="leftBtn" class="control-btn"></div>
+            <div id="rightBtn" class="control-btn"></div>
+        </div>
     </div>
     <script>
         const canvas = document.getElementById('gameCanvas');
@@ -89,17 +112,17 @@
         let enemyBullets = [];
 
         // Controls
-        let touchX = null;
         let leftPressed = false;
         let rightPressed = false;
-        let lastTouchTime = 0;
-        const DOUBLE_TAP_DELAY = 300; // milliseconds
 
-        // Keyboard controls
+        // Event listeners
         document.addEventListener('keydown', (e) => {
             if (e.key === 'ArrowLeft') leftPressed = true;
             if (e.key === 'ArrowRight') rightPressed = true;
             if (e.key === ' ' && !gameOver) fireBullet();
+            if (gameOver) {
+                resetGame();
+            }
         });
 
         document.addEventListener('keyup', (e) => {
@@ -108,29 +131,32 @@
         });
 
         // Touch controls
+        leftBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            leftPressed = true;
+        });
+
+        leftBtn.addEventListener('touchend', () => {
+            leftPressed = false;
+        });
+
+        rightBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            rightPressed = true;
+        });
+
+        rightBtn.addEventListener('touchend', () => {
+            rightPressed = false;
+        });
+
         canvas.addEventListener('touchstart', (e) => {
             e.preventDefault();
-            const touch = e.touches[0];
-            touchX = touch.clientX;
-
-            // Check for double tap to fire
-            const currentTime = new Date().getTime();
-            const tapLength = currentTime - lastTouchTime;
-            if (tapLength < DOUBLE_TAP_DELAY && tapLength > 0) {
-                if (!gameOver) fireBullet();
+            if (!gameOver) {
+                fireBullet();
             }
-            lastTouchTime = currentTime;
-        });
-
-        canvas.addEventListener('touchmove', (e) => {
-            e.preventDefault();
-            const touch = e.touches[0];
-            touchX = touch.clientX;
-        });
-
-        canvas.addEventListener('touchend', (e) => {
-            e.preventDefault();
-            touchX = null;
+            else {
+                resetGame();
+            }
         });
 
         function fireBullet() {
@@ -160,35 +186,13 @@
         }
 
         function movePlayer() {
-            // Handle keyboard movement
             if (leftPressed && player.x > 0) {
                 player.x -= player.speed;
             }
             if (rightPressed && player.x < canvas.width - player.width) {
                 player.x += player.speed;
             }
-
-            // Handle touch movement
-            if (touchX !== null) {
-                // Get canvas position and scale
-                const rect = canvas.getBoundingClientRect();
-                const scaleX = canvas.width / rect.width;
-
-                // Calculate target X position
-                const targetX = (touchX - rect.left) * scaleX - player.width / 2;
-
-                // Move towards touch position smoothly
-                const dx = targetX - player.x;
-                const moveAmount = Math.min(Math.abs(dx), player.speed) * Math.sign(dx);
-
-                // Update position with bounds checking
-                const newX = player.x + moveAmount;
-                if (newX >= 0 && newX <= canvas.width - player.width) {
-                    player.x = newX;
-                }
-            }
         }
-        
 
         function moveEnemies() {
             let touchedEdge = false;
@@ -265,34 +269,38 @@
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             // Draw player
-            // Draw player (green cannon)
-            ctx.fillStyle = '#00FF00';
-            // Base
-            ctx.fillRect(player.x + 24, player.y + 12, 2, 4);
-            // Middle section
-            ctx.fillRect(player.x + 20, player.y + 16, 10, 4);
-            // Wide base
-            ctx.fillRect(player.x, player.y + 20, 50, 4);
+            {
+                // Draw player (green cannon)
+                ctx.fillStyle = '#00FF00';
+                // Base
+                ctx.fillRect(player.x + 24, player.y + 12, 2, 4);
+                // Middle section
+                ctx.fillRect(player.x + 20, player.y + 16, 10, 4);
+                // Wide base
+                ctx.fillRect(player.x, player.y + 20, 50, 4);
+            }
 
             // Draw enemies
-            ctx.fillStyle = '#FFFFFF';
-            enemies.forEach(enemy => {
-                if (enemy.alive) {
-                    // Draw Space Invader sprite
-                    // Top antennas
-                    ctx.fillRect(enemy.x + 8, enemy.y, 4, 4);
-                    ctx.fillRect(enemy.x + 28, enemy.y, 4, 4);
-                    // Head
-                    ctx.fillRect(enemy.x + 4, enemy.y + 4, 32, 4);
-                    // Eyes and middle section
-                    ctx.fillRect(enemy.x, enemy.y + 8, 40, 8);
-                    // Bottom tentacles
-                    ctx.fillRect(enemy.x + 4, enemy.y + 16, 4, 4);
-                    ctx.fillRect(enemy.x + 12, enemy.y + 16, 4, 4);
-                    ctx.fillRect(enemy.x + 24, enemy.y + 16, 4, 4);
-                    ctx.fillRect(enemy.x + 32, enemy.y + 16, 4, 4);
-                }
-            });
+            {
+                ctx.fillStyle = '#FFFFFF';
+                enemies.forEach(enemy => {
+                    if (enemy.alive) {
+                        // Draw Space Invader sprite
+                        // Top antennas
+                        ctx.fillRect(enemy.x + 8, enemy.y, 4, 4);
+                        ctx.fillRect(enemy.x + 28, enemy.y, 4, 4);
+                        // Head
+                        ctx.fillRect(enemy.x + 4, enemy.y + 4, 32, 4);
+                        // Eyes and middle section
+                        ctx.fillRect(enemy.x, enemy.y + 8, 40, 8);
+                        // Bottom tentacles
+                        ctx.fillRect(enemy.x + 4, enemy.y + 16, 4, 4);
+                        ctx.fillRect(enemy.x + 12, enemy.y + 16, 4, 4);
+                        ctx.fillRect(enemy.x + 24, enemy.y + 16, 4, 4);
+                        ctx.fillRect(enemy.x + 32, enemy.y + 16, 4, 4);
+                    }
+                });
+            }
 
             // Draw bullets
             ctx.fillStyle = bullet.color;
